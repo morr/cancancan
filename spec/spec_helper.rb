@@ -27,6 +27,11 @@ RSpec.configure do |config|
   end
 
   config.include SQLHelpers
+
+  config.after :each do
+    CanCan.accessible_by_strategy = CanCan.default_accessible_by_strategy
+    CanCan.rules_compressor_enabled = true
+  end
 end
 
 RSpec::Matchers.define :generate_sql do |expected|

@@ -1,10 +1,59 @@
+## Unreleased
+
+* [#653](https://github.com/CanCanCommunity/cancancan/pull/653): Add support for using an nil relation as a condition. ([@ghiculescu][])
+* [#702](https://github.com/CanCanCommunity/cancancan/pull/702): Support scopes of STI classes as ability conditions. ([@honigc][])
+* [#798](https://github.com/CanCanCommunity/cancancan/pull/798): Allow disabling of rules compressor via `CanCan.rules_compressor_enabled = false`. ([@coorasse][])
+
+## 3.4.0
+
+* [#691](https://github.com/CanCanCommunity/cancancan/pull/691): Add two new subquery strategies: `joined_alias_exists_subquery`, `joined_alias_each_rule_as_exists_subquery`. ([@kaspernj][])
+* [#767](https://github.com/CanCanCommunity/cancancan/pull/767): Improve ability checks with nested resources (hash checks)vim. ([@Juleffel][])
+* [#772](https://github.com/CanCanCommunity/cancancan/pull/772): Support non-hash conditions in ability definitions. ([@Juleffel][])
+* [#773](https://github.com/CanCanCommunity/cancancan/pull/773): Drop support for ruby 2.4 and 2.5. ([@coorasse][])
+* [#778](https://github.com/CanCanCommunity/cancancan/pull/778): Drop support for ActiveRecord 4. ([@coorasse][])
+
+## 3.3.0
+
+* [#675](https://github.com/CanCanCommunity/cancancan/pull/675): Support modifying the `accessible_by` querying strategy on a per-query basis. ([@ghiculescu][])
+* [#714](https://github.com/CanCanCommunity/cancancan/pull/714): Don't hold unnecessary references to subjects in @rules_index. ([@mtoneil][])
+
+## 3.2.2
+
+* Added funding metadata to Gemspec. ([@coorasse][])
+
+## 3.2.1
+
+* [#674](https://github.com/CanCanCommunity/cancancan/pull/674): Fix accidental dependency on ActiveRecord in 3.2.0. ([@ghiculescu][])
+
+## 3.2.0
+
+* [#649](https://github.com/CanCanCommunity/cancancan/pull/649): Add support for Single Table Inheritance. ([@Liberatys][])
+* [#640](https://github.com/CanCanCommunity/cancancan/pull/640): Simplify implementation of new model adapters. ([@ghiculescu][])
+* [#650](https://github.com/CanCanCommunity/cancancan/pull/650): Support associations in rules. ([@Liberatys][])
+* [#657](https://github.com/CanCanCommunity/cancancan/pull/657): Support for Rails 6.1. ([@ghiculescu][])
+* [#655](https://github.com/CanCanCommunity/cancancan/pull/655): Add option for `accessible_by` querying strategy. ([@ghiculescu][])
+
+## 3.1.0
+
+* [#605](https://github.com/CanCanCommunity/cancancan/pull/605): Generate inner queries instead of join+distinct. ([@fsateler][])
+* [#608](https://github.com/CanCanCommunity/cancancan/pull/608): Spec for json column regression. ([@aleksejleonov][])
+* [#571](https://github.com/CanCanCommunity/cancancan/pull/571): Allows to check ability even the object implements `#to_a`. ([@mtsmfm][])
+* [#612](https://github.com/CanCanCommunity/cancancan/pull/612): Suppress keyword arguments warning for Ruby 2.7.0. ([@koic][])
+* [#569](https://github.com/CanCanCommunity/cancancan/pull/569): Fix accessible_by fires query for rules using association as condition. ([@albb0920][])
+* [#594](https://github.com/CanCanCommunity/cancancan/pull/594): Support translation of action name. ([@ayumu838][])
+
+## 3.0.2
+
+* [#590](https://github.com/CanCanCommunity/cancancan/pull/590): Fix Rule#inspect when rule is created through a SQL array. ([@frostblooded][])
+* [#592](https://github.com/CanCanCommunity/cancancan/pull/592): Prevent normalization of through polymorphic associations.([@eloyesp][])
+
 ## 3.0.1
 
 * [#583](https://github.com/CanCanCommunity/cancancan/pull/583): Fix regression when using a method reference block. ([@coorasse][])
 
 ## 3.0.0
 
-Please read the [guide on migrating from CanCanCan 2.x to 3.0](https://github.com/CanCanCommunity/cancancan/wiki/Migrating-from-CanCanCan-2.x-to-3.0)
+Please read the [guide on migrating from CanCanCan 2.x to 3.0](https://github.com/CanCanCommunity/cancancan/blob/develop/docs/migrating.md#from-2x-to-3x)
 
 * [#560](https://github.com/CanCanCommunity/cancancan/pull/560): Add support for Rails 6.0. ([@coorasse][])
 * [#489](https://github.com/CanCanCommunity/cancancan/pull/489): Drop support for actions without a subject. ([@andrew-aladev][])
@@ -131,7 +180,7 @@ Please read the [guide on migrating from CanCanCan 2.x to 3.0](https://github.co
 
 ## 1.9.0 (July 20th, 2014)
 
-* Fix cancancan#59 - Parameters are automatically detected and santitized for all actions, not just create and update ([@bryanrite][]).
+* Fix cancancan#59 - Parameters are automatically detected and sanitized for all actions, not just create and update ([@bryanrite][]).
 
 * Fix cancancan#97, 72, 40, 39, 26 - Support Active Record 4 properly with references on nested permissions (scpike, tdg5, Crystark).
 
@@ -164,7 +213,7 @@ Please read the [guide on migrating from CanCanCan 2.x to 3.0](https://github.co
 
 * Feature cancancan#3 - Permit "can?" check multiple subjects (cefigueiredo).
 
-* Feature cancancan#29 - Add ability to use a String that will get instance_eval'd or a Proc that will get called as the parameter method option for strong_parameter santization (svoop).
+* Feature cancancan#29 - Add ability to use a String that will get instance_eval'd or a Proc that will get called as the parameter method option for strong_parameter sanitization (svoop).
 
 * Feature cancancan#48 - Define a CanCanCan module. Even though it is not used, it is standard practice to define the module, and helpful for determining between CanCanCan and CanCan for external libraries.
 
@@ -643,3 +692,16 @@ Please read the [guide on migrating from CanCanCan 2.x to 3.0](https://github.co
 [@andrew-aladev]: https://github.com/andrew-aladev
 [@phaedryx]: https://github.com/phaedryx
 [@kaspernj]: https://github.com/kaspernj
+[@frostblooded]: https://github.com/frostblooded
+[@eloyesp]: https://github.com/eloyesp
+[@mtsmfm]: https://github.com/mtsmfm
+[@koic]: https://github.com/koic
+[@fsateler]: https://github.com/fsateler
+[@aleksejleonov]: https://github.com/aleksejleonov
+[@albb0920]: https://github.com/albb0920
+[@ayumu838]: https://github.com/ayumu838
+[@Liberatys]: https://github.com/Liberatys
+[@ghiculescu]: https://github.com/ghiculescu
+[@mtoneil]: https://github.com/mtoneil
+[@Juleffel]: https://github.com/Juleffel
+[@honigc]: https://github.com/honigc

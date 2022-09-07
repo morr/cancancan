@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'conditions_extractor.rb'
-require 'cancan/rules_compressor'
 module CanCan
   module ModelAdapters
     class ActiveRecordAdapter < AbstractAdapter
@@ -13,10 +11,42 @@ module CanCan
         Gem::Version.new(ActiveRecord.version).release < Gem::Version.new(version)
       end
 
+      attr_reader :compressed_rules
+
       def initialize(model_class, rules)
         super
-        @compressed_rules = RulesCompressor.new(@rules.reverse).rules_collapsed.reverse
+        @compressed_rules = if CanCan.rules_compressor_enabled
+                              RulesCompressor.new(@rules.reverse).rules_collapsed.reverse
+                            else
+                              @rules
+                            end
+        StiNormalizer.normalize(@compressed_rules)
         ConditionsNormalizer.normalize(model_class, @compressed_rules)
+      end
+
+      class << self
+        # When belongs_to parent_id is a condition for a model,
+        # we want to check the parent when testing ability for a hash {parent => model}
+        def override_nested_subject_conditions_matching?(parent, child, all_conditions)
+          parent_child_conditions(parent, child, all_conditions).present?
+        end
+
+        # parent_id condition can be an array of integer or one integer, we check the parent against this
+        def nested_subject_matches_conditions?(parent, child, all_conditions)
+          id_condition = parent_child_conditions(parent, child, all_conditions)
+          return id_condition.include?(parent.id) if id_condition.is_a? Array
+          return id_condition == parent.id if id_condition.is_a? Integer
+
+          false
+        end
+
+        def parent_child_conditions(parent, child, all_conditions)
+          child_class = child.is_a?(Class) ? child : child.class
+          foreign_key = child_class.reflect_on_all_associations(:belongs_to).find do |association|
+            association.klass == parent.class
+          end&.foreign_key&.to_sym
+          foreign_key.nil? ? nil : all_conditions[foreign_key]
+        end
       end
 
       # Returns conditions intended to be used inside a database query. Normally you will not call this
@@ -60,6 +90,14 @@ module CanCan
         end
       end
 
+      def build_relation(*where_conditions)
+        relation = @model_class.where(*where_conditions)
+        return relation unless joins.present?
+
+        # subclasses must implement `build_joins_relation`
+        build_joins_relation(relation, *where_conditions)
+      end
+
       # Returns the associations used in conditions for the :joins option of a search.
       # See ModelAdditions#accessible_by
       def joins
@@ -99,7 +137,7 @@ module CanCan
       def raise_override_scope_error
         rule_found = @compressed_rules.detect { |rule| rule.conditions.is_a?(ActiveRecord::Relation) }
         raise Error,
-              'Unable to merge an Active Record scope with other conditions. '\
+              'Unable to merge an Active Record scope with other conditions. ' \
               "Instead use a hash or SQL for #{rule_found.actions.first} #{rule_found.subjects.first} ability."
       end
 

@@ -21,13 +21,15 @@ module CanCan
 
       private
 
-      def build_relation(*where_conditions)
-        relation = @model_class.where(*where_conditions)
-        relation = relation.left_joins(joins).distinct if joins.present?
-        relation
+      def build_joins_relation(relation, *where_conditions)
+        strategy_class.new(adapter: self, relation: relation, where_conditions: where_conditions).execute!
       end
 
-      # Rails 4.2 deprecates `sanitize_sql_hash_for_conditions`
+      def strategy_class
+        strategy_class_name = CanCan.accessible_by_strategy.to_s.camelize
+        CanCan::ModelAdapters::Strategies.const_get(strategy_class_name)
+      end
+
       def sanitize_sql(conditions)
         if conditions.is_a?(Hash)
           sanitize_sql_activerecord5(conditions)
@@ -41,11 +43,7 @@ module CanCan
         table_metadata = ActiveRecord::TableMetadata.new(@model_class, table)
         predicate_builder = ActiveRecord::PredicateBuilder.new(table_metadata)
 
-        conditions = predicate_builder.resolve_column_aliases(conditions)
-
-        conditions.stringify_keys!
-
-        predicate_builder.build_from_hash(conditions).map { |b| visit_nodes(b) }.join(' AND ')
+        predicate_builder.build_from_hash(conditions.stringify_keys).map { |b| visit_nodes(b) }.join(' AND ')
       end
 
       def visit_nodes(node)

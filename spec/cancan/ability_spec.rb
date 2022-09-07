@@ -127,6 +127,17 @@ describe CanCan::Ability do
     expect(@block_called).to be(true)
   end
 
+  it 'allows passing nil as extra arguments' do
+    @ability.can :to_s, Integer do |integer, arg1, arg2|
+      expect(integer).to eq(42)
+      expect(arg1).to eq(nil)
+      expect(arg2).to eq(:foo)
+      @block_called = true
+    end
+    @ability.can?(:to_s, 42, nil, nil, :foo)
+    expect(@block_called).to be(true)
+  end
+
   it 'passes nil to object when comparing class with can check' do
     @ability.can do |action, object_class, object|
       expect(action).to eq(:foo)
@@ -441,6 +452,31 @@ describe CanCan::Ability do
     expect(@ability.attributes_for(:new, Range)).to eq(foo: 'foo', bar: 123, baz: 'baz')
   end
 
+  it 'allows to check ability even the object implements `#to_a`' do
+    stub_const('X', Class.new do
+      def self.to_a
+        []
+      end
+    end)
+
+    @ability.can :read, X
+    expect(@ability.can?(:read, X.new)).to be(true)
+  end
+
+  it 'respects `#to_ary`' do
+    stub_const('X', Class.new do
+      def self.to_ary
+        [Y]
+      end
+    end)
+
+    stub_const('Y', Class.new)
+
+    @ability.can :read, X
+    expect(@ability.can?(:read, X.new)).to be(false)
+    expect(@ability.can?(:read, Y.new)).to be(true)
+  end
+
   # rubocop:disable Style/SymbolProc
   describe 'different usages of blocks and procs' do
     class A
@@ -649,6 +685,14 @@ describe CanCan::Ability do
     expect(@ability.permitted_attributes(:read, Integer)).to eq([:to_s])
   end
 
+  it 'does not retain references to subjects that do not have direct rules' do
+    @ability.can :read, String
+
+    @ability.can?(:read, 'foo')
+
+    expect(@ability.instance_variable_get(:@rules_index)).not_to have_key('foo')
+  end
+
   describe 'unauthorized message' do
     after(:each) do
       I18n.backend = nil
@@ -682,9 +726,44 @@ describe CanCan::Ability do
       end
     end
 
+    it "uses action's name in i18n" do
+      class Account
+        include ActiveModel::Model
+      end
+
+      I18n.backend.store_translations :en,
+                                      actions: { update: 'english name' },
+                                      unauthorized: { update: { all: '%{action}' } }
+      I18n.backend.store_translations :ja,
+                                      actions: { update: 'japanese name' },
+                                      unauthorized: { update: { all: '%{action}' } }
+
+      I18n.with_locale(:en) do
+        expect(@ability.unauthorized_message(:update, Account)).to eq('english name')
+      end
+
+      I18n.with_locale(:ja) do
+        expect(@ability.unauthorized_message(:update, Account)).to eq('japanese name')
+      end
+    end
+
     it 'uses symbol as subject directly' do
       I18n.backend.store_translations :en, unauthorized: { has: { cheezburger: 'Nom nom nom. I eated it.' } }
       expect(@ability.unauthorized_message(:has, :cheezburger)).to eq('Nom nom nom. I eated it.')
+    end
+
+    it 'uses correct i18n keys when hashes are used' do
+      # Hashes are sent as subject when using:
+      # load_and_authorize_resource :blog
+      # load_and_authorize_resource through: :blog
+      # And subject for collection actions (ie: index) returns: { <Blog id:1> => Post(id:integer) }
+      I18n.backend.store_translations :en, unauthorized: { update: { all: 'all', array: 'foo' } }
+      expect(@ability.unauthorized_message(:update, Hash => Array)).to eq('foo')
+    end
+
+    it 'uses correct subject when hashes are used' do
+      I18n.backend.store_translations :en, unauthorized: { manage: { all: '%<action>s %<subject>s' } }
+      expect(@ability.unauthorized_message(:update, Hash => Array)).to eq('update array')
     end
 
     it "falls back to 'manage' and 'all'" do
@@ -759,6 +838,40 @@ describe CanCan::Ability do
 
       @ability.merge(another_ability)
       expect(@ability.send(:rules).size).to eq(0)
+    end
+  end
+
+  describe 'when #can? is used with a Hash (nested resources)' do
+    it 'is unauthorized with no rules' do
+      expect(@ability.can?(:read, 1 => Symbol)).to be(false)
+    end
+
+    it 'is authorized when the child is authorized' do
+      @ability.can :read, Symbol
+      expect(@ability.can?(:read, 1 => Symbol)).to be(true)
+    end
+
+    it 'is authorized when the condition doesn\'t concern the parent' do
+      @ability.can :read, Symbol, whatever: true
+      expect(@ability.can?(:read, 1 => Symbol)).to be(true)
+    end
+
+    it 'verifies the parent against an equality condition' do
+      @ability.can :read, Symbol, integer: 1
+      expect(@ability.can?(:read, 1 => Symbol)).to be(true)
+      expect(@ability.can?(:read, 2 => Symbol)).to be(false)
+    end
+
+    it 'verifies the parent against an array condition' do
+      @ability.can :read, Symbol, integer: [0, 1]
+      expect(@ability.can?(:read, 1 => Symbol)).to be(true)
+      expect(@ability.can?(:read, 2 => Symbol)).to be(false)
+    end
+
+    it 'verifies the parent against a hash condition' do
+      @ability.can :read, Symbol, integer: { to_i: 1 }
+      expect(@ability.can?(:read, 1 => Symbol)).to be(true)
+      expect(@ability.can?(:read, 2 => Symbol)).to be(false)
     end
   end
 end
